@@ -252,7 +252,9 @@ Append main.tf with the following information
 ```sh
 resource "openstack_compute_instance_v2" "test-server" {
   name = "${var.LINUX_INSTANCE_NAME}"
+  image_name = "${var.LINUX_IMAGE_NAME}"
   image_id = "${var.LINUX_IMAGE_ID}"
+  flavor_name = "${var.LINUX_FLAVOR_NAME}"
   flavor_id = "${var.LINUX_FLAVOR_ID}"
   key_pair = "${var.KEY_NAME}"
   security_groups = ["default"]
