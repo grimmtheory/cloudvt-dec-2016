@@ -270,6 +270,51 @@ $ terraform destroy
 
 # Step 6 - Add Security Groups
 
+As with previous steps, let's add the relevant content to the variables.tf and main.tf files.
+
+Append variables.tf with the following information
+
+```sh
+# Security Groups
+variable "SECGROUP_NAME" { default = "http-ssh-secgroup" }
+```
+
+Append main.tf with the following information
+
+```sh
+# Create security group
+resource "openstack_compute_secgroup_v2" "secgroup_1" {
+  name = "${var.SECGROUP_NAME}"
+  description = "my security group"
+  rule {
+    from_port = 22
+    to_port = 22
+    ip_protocol = "tcp"
+    cidr = "0.0.0.0/0"
+  }
+  rule {
+    from_port = 80
+    to_port = 80
+    ip_protocol = "tcp"
+    cidr = "0.0.0.0/0"
+  }
+}
+```
+
+Also, you have to add the security group to the instance, so add this line to the instance resource we created earlier
+
+```sh
+security_groups = ["${openstack_compute_secgroup_v2.secgroup_1.name}"]
+```
+
+Once again run plan and apply and verify your results.  If everything looks good then do another terraform destroy to start with a clean slate on the next step, or, alternately, if you're confident that you've got the process down then leave the infrastructure up and experiment with incremental "applys" going forward.
+
+```sh
+$ terraform plan
+$ terraform apply
+# verify results and optionally destroy or keep
+$ terraform destroy
+```
 
 # Step 7 - Add Floating IPs
 
