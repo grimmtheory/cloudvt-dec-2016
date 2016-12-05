@@ -42,7 +42,8 @@ You can start with the examples in the cloned git repository or you can start fr
 
 The variables.tf at this point should look similar to this:
 
-```# Tenant Variables
+```sh
+# Tenant Variables
 variable "TENANT_NAME" { default = "********" }
 variable "TENANT_USER_NAME" { default = "********" }
 variable "TENANT_USER_PASSWORD" { default = "********" }
@@ -51,7 +52,8 @@ variable "TENANT_AUTH_URL" { default = "https://********.metacloud.net:5000/v2.0
 
 And your main.tf should look similar to this:
 
-```# Configure the OpenStack Provider
+```sh
+# Configure the OpenStack Provider
 provider "openstack" {
   tenant_name = "${var.TENANT_NAME}"
   user_name = "${var.TENANT_USER_NAME}"
@@ -62,12 +64,18 @@ provider "openstack" {
 
 When your files are complete, test the configuration by running terraform apply
 
-```$ terraform apply
+```sh
+$ terraform apply
 ```
 
 If everything is configured correctly you should see the following message
 
-```Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
+```sh
+Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
 ```
 
+# Step 3 - Create a router and attach it to the public network
 
+_NOTE - To avoid confusion w/ other lab teams, use a unique name for your infrastructure, e.g. team#-router-1, team#-network-1, etc._
+
+ 
