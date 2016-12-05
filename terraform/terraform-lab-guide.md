@@ -46,7 +46,8 @@ The variables.tf at this point should look similar to this:
 variable "TENANT_NAME" { default = "********" }
 variable "TENANT_USER_NAME" { default = "********" }
 variable "TENANT_USER_PASSWORD" { default = "********" }
-variable "TENANT_AUTH_URL" { default = "https://********.metacloud.net:5000/v2.0" }```
+variable "TENANT_AUTH_URL" { default = "https://********.metacloud.net:5000/v2.0" }
+```
 
 And your main.tf should look similar to this:
 
@@ -56,6 +57,12 @@ provider "openstack" {
   user_name = "${var.TENANT_USER_NAME}"
   password = "${var.TENANT_USER_PASSWORD}"
   auth_url = "${var.TENANT_AUTH_URL}"
-}```
+}
+```
+
+When your files are complete, test the configuration by running terraform apply
+
+```$ terraform apply
+```
 
 
