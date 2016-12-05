@@ -1,0 +1,463 @@
+heat_template_version: 2013-05-23
+
+description: >
+  HOT template to create a 3 tier Linux platform.
+
+parameters:
+  GATEWAY_NETWORK_ID:
+    type: string
+  KEY_NAME:
+    type: string
+  LB_SERVER_NAME:
+    type: string
+  LINUX_FLAVOR_ID:
+    type: string
+  LINUX_FLAVOR_NAME:
+    type: string
+  LINUX_IMAGE_ID:
+    type: string
+  LINUX_IMAGE_NAME:
+    type: string
+  SQL_SERVER_NAME:
+    type: string
+  PRIVATE_NETWORK_ID:
+    type: string
+  PRIVATE_NETWORK_NAME:
+    type: string
+  PRIVATE_SECGROUP_ID:
+    type: string
+  PRIVATE_SECGROUP_NAME:
+    type: string
+  SSH_SECGROUP_ID:
+    type: string
+  SSH_SECGROUP_NAME:
+    type: string
+  WEB_NETWORK_ID:
+    type: string
+  WEB_NETWORK_NAME:
+    type: string
+  WEB_SECGROUP_ID:
+    type: string
+  WEB_SECGROUP_NAME:
+    type: string
+  WEB_SERVER1_NAME:
+    type: string
+  WEB_SERVER2_NAME:
+    type: string
+
+  LocalAdminUsername:
+    description: The local administrator username.
+    type: string
+    default: jtg-admin
+    constraints:
+      - length: { min: 1 }
+
+  LocalAdminPassword:
+    description: The local administrator password.
+    type: string
+    default: Restric1
+    constraints:
+      - length: { min: 8 }
+
+  db_password:
+    description: The Drupal database password
+    type: string
+    default: Restric1
+    constraints:
+      - length: { min: 8 }
+
+  drupal_admin:
+    description: The Drupal admin username
+    type: string
+    default: admin
+    constraints:
+      - length: { min: 1 }
+
+  drupal_admin_password:
+    description: The Drupal admin user's password
+    type: string
+    default: "Restric1"
+    constraints:
+      - length: { min: 8 }
+
+  drupal_site_name:
+    default: My Drupal site created with Heat!
+    description: The Drupal site name
+    type: string
+    constraints:
+      - length: { min: 1 }
+
+resources:
+  LB_SERVER:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: LB_SERVER_NAME }
+      image: { get_param: LINUX_IMAGE_ID }
+      flavor: { get_param: LINUX_FLAVOR_ID }
+      key_name: { get_param: KEY_NAME }
+      networks:
+        - port: { get_resource: LB_SERVER_PORT }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            web_server1_name: { get_param: WEB_SERVER1_NAME }
+            web_server2_name: { get_param: WEB_SERVER2_NAME }
+            web_server1_private_ip: { get_attr: [ WEB_SERVER1, first_address ] }
+            web_server2_private_ip: { get_attr: [ WEB_SERVER2, first_address ] }
+          template: |
+            #!/bin/bash
+            apt-get -y update; apt-get -y upgrade
+            apt-get -y install haproxy
+            cat <<'HAPROXY' > /etc/haproxy/haproxy.cfg
+            global
+                    log /dev/log   local0
+                    log 127.0.0.1   local1 notice
+                    maxconn 4096
+                    user haproxy
+                    group haproxy
+                    daemon
+
+            defaults
+                    log     global
+                    mode    http
+                    option  httplog
+                    option  dontlognull
+                    retries 3
+                    option redispatch
+                    maxconn 2000
+                    contimeout     5000
+                    clitimeout     50000
+                    srvtimeout     50000
+
+            listen web-lb-80 0.0.0.0:80
+                mode http
+                stats enable
+                stats uri /haproxy?stats
+                balance roundrobin
+                option httpclose
+                option forwardfor
+                server web_server1_name-web_server1_private_ip web_server1_private_ip:80 check
+                server web_server2_name-web_server2_private_ip web_server2_private_ip:80 check
+            listen web-lb-8001 0.0.0.0:8001
+                mode http
+                stats enable
+                stats uri /haproxy?stats
+                balance roundrobin
+                option httpclose
+                option forwardfor
+                server web_server1_name-web_server1_private_ip web_server1_private_ip:80 check
+            listen web-lb-8002 0.0.0.0:8002
+                mode http
+                stats enable
+                stats uri /haproxy?stats
+                balance roundrobin
+                option httpclose
+                option forwardfor
+                server web_server2_name-web_server2_private_ip web_server2_private_ip:80 check
+            HAPROXY
+            sed -i -e 's/ENABLED=0/ENABLED=1/g' /etc/default/haproxy
+            service haproxy start
+
+  LB_SERVER_PORT:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_param: WEB_NETWORK_ID }
+      security_groups: [ default, { get_param: WEB_SECGROUP_ID }, { get_param: SSH_SECGROUP_ID }, { get_param: PRIVATE_SECGROUP_ID }, ]
+
+  LB_FLOATING_IP:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: GATEWAY_NETWORK_ID }
+      port_id: { get_resource: LB_SERVER_PORT }
+
+  WEB_SERVER1:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: WEB_SERVER1_NAME }
+      image: windows.server.2k12.r2.std.eval
+      flavor: { get_param: LINUX_FLAVOR_ID }
+      key_name: { get_param: KEY_NAME }
+      networks:
+        - port: { get_resource: WEB_SERVER1_PORT }
+      user_data:
+        str_replace:
+          template: |
+            #ps1_sysnative
+            $ErrorActionPreference = 'Stop'
+            function ExecRetry($command, $maxRetryCount = 10, $retryInterval=2)
+            {
+                $currErrorActionPreference = $ErrorActionPreference
+                $ErrorActionPreference = "Continue"
+
+                $retryCount = 0
+                while ($true)
+                {
+                    try
+                    {
+                        & $command
+                        break
+                    }
+                    catch [System.Exception]
+                    {
+                        $retryCount++
+                        if ($retryCount -ge $maxRetryCount)
+                        {
+                            $ErrorActionPreference = $currErrorActionPreference
+                            throw
+                        }
+                        else
+                        {
+                            Write-Error $_.Exception
+                            Start-Sleep $retryInterval
+                        }
+                    }
+                }
+
+                $ErrorActionPreference = $currErrorActionPreference
+            }
+
+            #Create local administrator
+            $Computer = [ADSI]"WinNT://$Env:COMPUTERNAME,Computer"
+            $LocalAdmin = $Computer.Create("User", "jtg-admin")
+            $LocalAdmin.SetPassword("Restric1")
+            $LocalAdmin.SetInfo()
+            $LocalAdmin.FullName = "jtg-admin"
+            $LocalAdmin.SetInfo()
+            $LocalAdmin.UserFlags = 64 + 65536
+            $LocalAdmin.SetInfo()
+            $AdminGroup = [ADSI]"WinNT://web-server1/Administrators,group"
+            $User = [ADSI]"WinNT://web-server1/jtg-admin,user"
+            $AdminGroup.Add($User.Path)
+
+            $webPiMsi = "WebPlatformInstaller_amd64_en-US.msi"
+            $webPiUrl = "http://download.microsoft.com/download/7/0/4/704CEB4C-9F42-4962-A2B0-5C84B0682C7A/$webPiMsi"
+            $webPiMsiPath = "$ENV:Temp\$webPiMsi"
+            ExecRetry { (new-object System.Net.WebClient).DownloadFile($webPiUrl, $webPiMsiPath) }
+
+            cd "$ENV:Temp"
+            ExecRetry {
+              $p = Start-Process -Wait msiexec.exe -PassThru -ArgumentList "/i $webPiMsiPath /qn /l*v webpi_msi_log.txt"
+              if ($p.ExitCode -ne 0) { throw "msiexec failed to install WebPI" }
+            }
+            del $webPiMsiPath
+
+            $ENV:PATH+=";$Env:ProgramFiles\Microsoft\Web Platform Installer\"
+            Set-Content deploy.app "Application Path[@]Default Web Site`nDatabase Password[@]db_password`ndbAdminPassword[@]db_password"
+            ExecRetry {
+              webpicmd /Install /Application:AcquiaDrupal@deploy.app /AcceptEULA /SQLPassword:db_password
+              if ($LastExitCode) { throw "webpicmd failed" }
+            }
+            del deploy.app
+
+            $drushMsi="Drush-6.0-2013-08-28-Installer-v1.0.21.msi"
+            $drushUrl="http://www.drush.org/sites/default/files/attachments/$drushMsi"
+            $drushMsiPath = "$ENV:Temp\$drushMsi"
+            ExecRetry { (new-object System.Net.WebClient).DownloadFile($drushUrl, $drushMsiPath) }
+
+            ExecRetry {
+              $p = Start-Process -Wait msiexec.exe -PassThru -ArgumentList "/i $drushMsiPath /qn /l*v drush_msi_log.txt"
+              if ($p.ExitCode -ne 0) { throw "msiexec failed to install Drush" }
+            }
+            del $drushMsiPath
+
+            import-module WebAdministration
+            cd (Get-Item 'IIS:\Sites\Default Web Site').physicalpath.replace("%SystemDrive%", "$ENV:SystemDrive")
+
+            icacls "$ENV:SystemRoot\Temp" /grant "IUSR:(OI)(CI)(M)"
+            if ($LastExitCode) { throw "Failed to set permissions on temporary directory" }
+
+            $ENV:Path+=";$ENV:ProgramData\Drush\;${ENV:ProgramFiles(x86)}\Drush\GnuWin32\bin;${ENV:ProgramFiles(x86)}\Drush\Php"
+            ExecRetry {
+              drush site-install standard --account-name="drupal_admin" --account-pass="drupal_admin_password" --site-name="drupal_site_name" -y
+              if ($LastExitCode) { throw "Drush failed" }
+            }
+
+          params:
+            db_password: { get_param: db_password }
+            drupal_admin: { get_param: drupal_admin }
+            drupal_admin_password: { get_param: drupal_admin_password }
+            drupal_site_name: { get_param: drupal_site_name }
+            LocalAdminUsername: { get_param: LocalAdminUsername }
+            LocalAdminPassword: { get_param: LocalAdminPassword }
+            web_server1_name: { get_param: WEB_SERVER1_NAME }
+
+  WEB_SERVER1_PORT:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_param: WEB_NETWORK_ID }
+      security_groups: [ default, { get_param: PRIVATE_SECGROUP_ID } ]
+
+  WEB_SERVER2:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: WEB_SERVER2_NAME }
+      image: windows.server.2k12.r2.std.eval
+      flavor: { get_param: LINUX_FLAVOR_ID }
+      key_name: { get_param: KEY_NAME }
+      networks:
+        - port: { get_resource: WEB_SERVER2_PORT }
+      user_data:
+        str_replace:
+          template: |
+            #ps1_sysnative
+            $ErrorActionPreference = 'Stop'
+            function ExecRetry($command, $maxRetryCount = 10, $retryInterval=2)
+            {
+                $currErrorActionPreference = $ErrorActionPreference
+                $ErrorActionPreference = "Continue"
+
+                $retryCount = 0
+                while ($true)
+                {
+                    try
+                    {
+                        & $command
+                        break
+                    }
+                    catch [System.Exception]
+                    {
+                        $retryCount++
+                        if ($retryCount -ge $maxRetryCount)
+                        {
+                            $ErrorActionPreference = $currErrorActionPreference
+                            throw
+                        }
+                        else
+                        {
+                            Write-Error $_.Exception
+                            Start-Sleep $retryInterval
+                        }
+                    }
+                }
+
+                $ErrorActionPreference = $currErrorActionPreference
+            }
+
+            #Create local administrator
+            $Computer = [ADSI]"WinNT://$Env:COMPUTERNAME,Computer"
+            $LocalAdmin = $Computer.Create("User", "jtg-admin")
+            $LocalAdmin.SetPassword("Restric1")
+            $LocalAdmin.SetInfo()
+            $LocalAdmin.FullName = "jtg-admin"
+            $LocalAdmin.SetInfo()
+            $LocalAdmin.UserFlags = 64 + 65536
+            $LocalAdmin.SetInfo()
+            $AdminGroup = [ADSI]"WinNT://web-server2/Administrators,group"
+            $User = [ADSI]"WinNT://web-server2/jtg-admin,user"
+            $AdminGroup.Add($User.Path)
+
+            $webPiMsi = "WebPlatformInstaller_amd64_en-US.msi"
+            $webPiUrl = "http://download.microsoft.com/download/7/0/4/704CEB4C-9F42-4962-A2B0-5C84B0682C7A/$webPiMsi"
+            $webPiMsiPath = "$ENV:Temp\$webPiMsi"
+            ExecRetry { (new-object System.Net.WebClient).DownloadFile($webPiUrl, $webPiMsiPath) }
+
+            cd "$ENV:Temp"
+            ExecRetry {
+              $p = Start-Process -Wait msiexec.exe -PassThru -ArgumentList "/i $webPiMsiPath /qn /l*v webpi_msi_log.txt"
+              if ($p.ExitCode -ne 0) { throw "msiexec failed to install WebPI" }
+            }
+            del $webPiMsiPath
+
+            $ENV:PATH+=";$Env:ProgramFiles\Microsoft\Web Platform Installer\"
+            Set-Content deploy.app "Application Path[@]Default Web Site`nDatabase Password[@]db_password`ndbAdminPassword[@]db_password"
+            ExecRetry {
+              webpicmd /Install /Application:AcquiaDrupal@deploy.app /AcceptEULA /SQLPassword:db_password
+              if ($LastExitCode) { throw "webpicmd failed" }
+            }
+            del deploy.app
+
+            $drushMsi="Drush-6.0-2013-08-28-Installer-v1.0.21.msi"
+            $drushUrl="http://www.drush.org/sites/default/files/attachments/$drushMsi"
+            $drushMsiPath = "$ENV:Temp\$drushMsi"
+            ExecRetry { (new-object System.Net.WebClient).DownloadFile($drushUrl, $drushMsiPath) }
+
+            ExecRetry {
+              $p = Start-Process -Wait msiexec.exe -PassThru -ArgumentList "/i $drushMsiPath /qn /l*v drush_msi_log.txt"
+              if ($p.ExitCode -ne 0) { throw "msiexec failed to install Drush" }
+            }
+            del $drushMsiPath
+
+            import-module WebAdministration
+            cd (Get-Item 'IIS:\Sites\Default Web Site').physicalpath.replace("%SystemDrive%", "$ENV:SystemDrive")
+
+            icacls "$ENV:SystemRoot\Temp" /grant "IUSR:(OI)(CI)(M)"
+            if ($LastExitCode) { throw "Failed to set permissions on temporary directory" }
+
+            $ENV:Path+=";$ENV:ProgramData\Drush\;${ENV:ProgramFiles(x86)}\Drush\GnuWin32\bin;${ENV:ProgramFiles(x86)}\Drush\Php"
+            ExecRetry {
+              drush site-install standard --account-name="drupal_admin" --account-pass="drupal_admin_password" --site-name="drupal_site_name" -y
+              if ($LastExitCode) { throw "Drush failed" }
+            }
+
+          params:
+            db_password: { get_param: db_password }
+            drupal_admin: { get_param: drupal_admin }
+            drupal_admin_password: { get_param: drupal_admin_password }
+            drupal_site_name: { get_param: drupal_site_name }
+            LocalAdminUsername: { get_param: LocalAdminUsername }
+            LocalAdminPassword: { get_param: LocalAdminPassword }
+            web_server1_name: { get_param: WEB_SERVER1_NAME }
+
+  WEB_SERVER2_PORT:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_param: WEB_NETWORK_ID }
+      security_groups: [ default, { get_param: PRIVATE_SECGROUP_ID } ]
+
+  SQL_SERVER:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: SQL_SERVER_NAME }
+      image: windows.server.2k12.r2.std.eval
+      flavor: { get_param: LINUX_FLAVOR_ID }
+      key_name: { get_param: KEY_NAME }
+      networks:
+        - port: { get_resource: SQL_SERVER_PORT }
+
+  SQL_SERVER_PORT:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_param: PRIVATE_NETWORK_ID }
+      security_groups: [ default, { get_param: PRIVATE_SECGROUP_ID } ]
+
+outputs:
+  web_server1_private_ip:
+    description: IP address of server1 in private network
+    value: { get_attr: [ WEB_SERVER1, first_address ] }
+
+  web_server2_private_ip:
+    description: IP address of server1 in private network
+    value: { get_attr: [ WEB_SERVER2, first_address ] }
+
+  web_server1_url:
+    description: web-server1 URL
+    value:
+      str_replace:
+        template: http://host:8001
+        params:
+          host: { get_attr: [ LB_FLOATING_IP, floating_ip_address ] }
+
+  web_server2_url:
+    description: web-serveri2 URL
+    value:
+      str_replace:
+        template: http://host:8002
+        params:
+          host: { get_attr: [ LB_FLOATING_IP, floating_ip_address ] }
+
+  lb_server_url:
+    description: lb-server URL
+    value:
+      str_replace:
+        template: http://host
+        params:
+          host: { get_attr: [ LB_FLOATING_IP, floating_ip_address ] }
+
+  lb_server_stats:
+    description: lb-server stats
+    value:
+      str_replace:
+        template: http://host/haproxy?stats
+        params:
+          host: { get_attr: [ LB_FLOATING_IP, floating_ip_address ] }
