@@ -29,3 +29,33 @@ If you want to continue working with the tools and have a local copy of the cont
 ### To clone the content
 
 - git clone https://github.com/grimmtheory/cloudvt-dec-2016.git
+
+# Step 2 - Basic Terraform Configuration and Testing
+
+Before we start building infrastructure with Terraform, let's first make sure we have some working basics like:
+
+- a main.tf
+- a variables.tf
+- a working cloud provider
+
+You can start with the examples in the cloned git repository or you can start from scratch.
+
+The variables.tf at this point should look similar to this:
+
+```# Tenant Variables
+variable "TENANT_NAME" { default = "********" }
+variable "TENANT_USER_NAME" { default = "********" }
+variable "TENANT_USER_PASSWORD" { default = "********" }
+variable "TENANT_AUTH_URL" { default = "https://********.metacloud.net:5000/v2.0" }```
+
+And your main.tf should look similar to this:
+
+```# Configure the OpenStack Provider
+provider "openstack" {
+  tenant_name = "${var.TENANT_NAME}"
+  user_name = "${var.TENANT_USER_NAME}"
+  password = "${var.TENANT_USER_PASSWORD}"
+  auth_url = "${var.TENANT_AUTH_URL}"
+}```
+
+
