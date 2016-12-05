@@ -76,6 +76,22 @@ If everything is configured correctly you should see the following message
 Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
 ```
 
+Your output should look similar to this
+
+```sh
+Do you really want to destroy?
+  Terraform will delete all your managed infrastructure.
+  There is no undo. Only 'yes' will be accepted to confirm.
+
+  Enter a value: yes
+
+openstack_networking_router_v2.public_router: Refreshing state... (ID: d91d27cb-6ca4-4073-bcbb-3482575a38a3)
+openstack_networking_router_v2.public_router: Destroying...
+openstack_networking_router_v2.public_router: Destruction complete
+
+Destroy complete! Resources: 1 destroyed.
+```
+
 # Step 3 - Create a router and attach it to the public network
 
 _NOTE - To avoid confusion w/ other lab teams, use a unique name for your infrastructure, e.g. team#-router-1, team#-network-1, etc._
