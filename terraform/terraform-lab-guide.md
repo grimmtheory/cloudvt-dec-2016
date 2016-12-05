@@ -40,6 +40,8 @@ Before we start building infrastructure with Terraform, let's first make sure we
 
 You can start with the examples in the cloned git repository or you can start from scratch.
 
+_Note, the variables file is optional, you can hard code everything in main.tf, but it makes the platform much more difficult to move between environments_sss
+
 The variables.tf at this point should look similar to this:
 
 ```sh
@@ -78,4 +80,31 @@ Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
 
 _NOTE - To avoid confusion w/ other lab teams, use a unique name for your infrastructure, e.g. team#-router-1, team#-network-1, etc._
 
- 
+To create a router, add the following, or something similar, to variables.tf
+
+```sh
+# Router
+variable "PUBLIC_ROUTER_NAME" { default = "team0-router1" }
+variable "GATEWAY_NETWORK_ID" { default = "898c045d-9aac-4558-925f-e6663c0d830b" }
+```
+
+And to main.tf
+
+```sh
+# Create public router
+resource "openstack_networking_router_v2" "public_router" {
+  name = "${var.PUBLIC_ROUTER_NAME}"
+  admin_state_up = "true"
+  external_gateway = "${var.GATEWAY_NETWORK_ID}"
+}
+```
+
+Once complete we can now try our first terraform apply to build infrastructure, run
+
+```sh
+$ terraform apply
+```
+
+and you should see output similar to this
+
+
