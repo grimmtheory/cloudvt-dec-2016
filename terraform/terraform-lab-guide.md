@@ -226,3 +226,56 @@ $ terraform destroy
 ```
 
 # Step 5 - Boot a VM on the new network
+
+As with previous steps, let's add the relevant content to the variables.tf and main.tf files.
+
+Append variables.tf with the following information
+
+```sh
+# Instance Variables
+variable "KEY_NAME" { default = "cloudvt-terraform" }
+
+variable "LINUX_INSTANCE_NAME" { default = "team#-instance1" }
+variable "LINUX_IMAGE_NAME" { default = "ubuntu-1404-x86-64" }
+variable "LINUX_IMAGE_ID" { default = "b2abd035-ebf1-421f-84b1-c95471758363" }
+variable "LINUX_FLAVOR_NAME" { default = "m1.medium" }
+variable "LINUX_FLAVOR_ID" { default = "2c8f5c26-9ecb-4351-b11e-8a3008e7a53e" }
+
+variable "LB_SERVER_NAME" { default = "lb-server" }
+variable "WEB_SERVER1_NAME" { default = "web-server1" }
+variable "WEB_SERVER2_NAME" { default = "web-server2" }
+variable "SQL_SERVER_NAME" { default = "sql-server" }
+```
+
+Append main.tf with the following information
+
+```sh
+resource "openstack_compute_instance_v2" "test-server" {
+  name = "${var.LINUX_INSTANCE_NAME}"
+  image_id = "${var.LINUX_IMAGE_ID}"
+  flavor_id = "${var.LINUX_FLAVOR_ID}"
+  key_pair = "${var.KEY_NAME}"
+  security_groups = ["default"]
+
+  network {
+    name = "${PRIVATE_NETWORK_NAME}"
+  }
+}
+```
+
+Once again run plan and apply and verify your results.  If everything looks good then do another terraform destroy to start with a clean slate on the next step, or, alternately, if you're confident that you've got the process down then leave the infrastructure up and experiment with incremental "applys" going forward.
+
+```sh
+$ terraform plan
+$ terraform apply
+# verify results and optionally destroy or keep
+$ terraform destroy
+```
+
+# Step 6 - Add Security Groups
+
+
+# Step 7 - Add Floating IPs
+
+
+# Step 8 - Experiment with config drive, user data or remote exec options
