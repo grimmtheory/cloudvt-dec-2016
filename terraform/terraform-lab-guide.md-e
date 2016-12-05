@@ -1,4 +1,4 @@
-# Module 1 - Access to Terraform
+# Step 1 - Access to Terraform
 
 In order to perform the functions of the Terraform lab you will first need access to Terraform.  You can accomplish this in one of 2 ways.
 
@@ -30,7 +30,7 @@ If you want to continue working with the tools and have a local copy of the cont
 
 - git clone https://github.com/grimmtheory/cloudvt-dec-2016.git
 
-# Module 2 - Basic Terraform Configuration and Testing
+# Step 2 - Basic Terraform Configuration and Testing
 
 Before we start building infrastructure with Terraform, let's first make sure we have some working basics like:
 
@@ -77,7 +77,7 @@ If everything is configured correctly you should see the following message
 Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
 ```
 
-# Module 3 - Create a router and attach it to the public network
+# Step 3 - Create a router and attach it to the public network
 
 _NOTE - To avoid confusion w/ other lab teams, use a unique name for your infrastructure, e.g. team#-router-1, team#-network-1, etc._
 
@@ -152,7 +152,7 @@ openstack_networking_router_v2.public_router: Destruction complete
 Destroy complete! Resources: 1 destroyed.
 ```
 
-# Module 4 - Create a private network, a subnet and connect it to your router
+# Step 4 - Create a private network, a subnet and connect it to your router
 
 Similar to how we created the router and gateway, let's now create a private network and attach it to the router
 
@@ -225,7 +225,7 @@ Once again run terraform destroy to start fresh on the next step
 $ terraform destroy
 ```
 
-# Module 5 - Boot a VM on the new network
+# Step 5 - Boot a VM on the new network
 
 As with previous steps, let's add the relevant content to the variables.tf and main.tf files.
 
@@ -268,7 +268,7 @@ $ terraform apply
 $ terraform destroy
 ```
 
-# Module 6 - Add Security Groups
+# Step 6 - Add Security Groups
 
 As with previous steps, let's add the relevant content to the variables.tf and main.tf files.
 
@@ -316,57 +316,7 @@ $ terraform apply
 $ terraform destroy
 ```
 
-# Module 7 - Add Floating IPs
-
-As with previous steps, let's add the relevant content to the variables.tf and main.tf files.
-
-Append variables.tf with the following information
-
-```sh
-# Floating IP Network
-variable "FLOATING_IP_NETWORK_ID" { default = "898c045d-9aac-4558-925f-e6663c0d830b" }
-```
-
-Append main.tf with the following information
-
-```sh
-resource "openstack_compute_floatingip_v2" "instance1-floating-ip" {
-  pool = "${var.FLOATING_IP_NETWORK_ID}"
-}
-```
-
-Now under the network section of your instance resource add the following line, and make it look like the following
-
-```sh
-  network {
-    name = "${var.PRIVATE_NETWORK_NAME}"
-    floating_ip = "${openstack_compute_floatingip_v2.instance1-floating-ip.address}"
-  }
-```
-
-Once again run plan and apply and verify your results.  If everything looks good then do another terraform destroy to start with a clean slate on the next step, or, alternately, if you're confident that you've got the process down then leave the infrastructure up and experiment with incremental "applys" going forward.
-
-```sh
-$ terraform plan
-$ terraform apply
-# verify results and optionally destroy or keep
-$ terraform destroy
-```
-
-# Module 8 - Experiment with user data / cloud-init
-
-Here we're going to inject some post installation tasks into our new instance.  To do this create a new file, for example 'web.sh' and add the following commands, or someting similar, to the file
-
-```sh
-apt-get -y update
-apt-get -y install apache2
-echo "<html><body><h1> It works! </h1>" > /var/www/html/index.html
-```
-
-Next, let's modify the instance information in main.tf to use our new user data
-
-```sh
+# Step 7 - Add Floating IPs
 
 
-
-# Module 9 - Working with outputs
+# Step 8 - Experiment with config drive, user data or remote exec options
