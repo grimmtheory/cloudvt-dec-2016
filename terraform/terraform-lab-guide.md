@@ -366,6 +366,8 @@ echo "<html><body><h1> It works! </h1>" > /var/www/html/index.html
 Next, let's modify the instance information in main.tf to use our new user data
 
 ```sh
+user_data = "./web.sh"
+```
 
 
 
