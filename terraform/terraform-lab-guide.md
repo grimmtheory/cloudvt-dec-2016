@@ -65,4 +65,9 @@ When your files are complete, test the configuration by running terraform apply
 ```$ terraform apply
 ```
 
+If everything is configured correctly you should see the following message
+
+```Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
+```
+
 
