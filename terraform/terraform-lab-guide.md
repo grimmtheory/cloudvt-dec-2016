@@ -107,4 +107,32 @@ $ terraform apply
 
 and you should see output similar to this
 
+```sh
+openstack_networking_router_v2.public_router: Creating...
+  admin_state_up:   "" => "true"
+  distributed:      "" => "<computed>"
+  external_gateway: "" => "898c045d-9aac-4558-925f-e6663c0d830b"
+  name:             "" => "team0-router1"
+  tenant_id:        "" => "<computed>"
+openstack_networking_router_v2.public_router: Creation complete
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+The state of your infrastructure has been saved to the path
+below. This state is required to modify and destroy your
+infrastructure, so keep it safe. To inspect the complete state
+use the `terraform show` command.
+
+State path: terraform.tfstate
+```
+
+Log into the web-ui, or use the openstack cli tools (already installed), to view your new router.
+
+Let's go ahead and tear down our changes as we're going to build on them each time, run
+
+```sh
+terraform destroy
+```
+
+# Step 4 - Create a private network and connect it to your router
 
