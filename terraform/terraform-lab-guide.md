@@ -369,6 +369,31 @@ Next, let's modify the instance information in main.tf to use our new user data
 user_data = "./web.sh"
 ```
 
+Once again run plan and apply and verify your results.  If everything looks good then do another terraform destroy to start with a clean slate on the next step, or, alternately, if you're confident that you've got the process down then leave the infrastructure up and experiment with incremental "applys" going forward.
 
+```sh
+$ terraform plan
+$ terraform apply
+# verify results and optionally destroy or keep
+$ terraform destroy
+```
 
 # Module 9 - Working with outputs
+
+Adding outputs to Terraform is quite easy.  They can also be very helpful, for instance, as in the demo, capturing the output to hand off to another tool or process.
+
+To get started with adding output add this to the bottom of main.tf
+
+```sh
+output "private-network-name" {
+  value = "${openstack_networking_network_v2.private_network.name}"
+}
+
+output "private-network-id" {
+  value = "${openstack_networking_network_v2.private_network.id}"
+}
+```
+
+This condludes the lab.
+
+For questions or comments email jasgrimm@cisco.com
