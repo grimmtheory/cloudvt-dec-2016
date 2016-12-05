@@ -67,6 +67,7 @@ provider "openstack" {
 When your files are complete, test the configuration by running terraform apply
 
 ```sh
+$ terraform plan
 $ terraform apply
 ```
 
@@ -102,6 +103,7 @@ resource "openstack_networking_router_v2" "public_router" {
 Once complete we can now try our first terraform apply to build infrastructure, run
 
 ```sh
+$ terraform plan
 $ terraform apply
 ```
 
@@ -150,5 +152,77 @@ openstack_networking_router_v2.public_router: Destruction complete
 Destroy complete! Resources: 1 destroyed.
 ```
 
-# Step 4 - Create a private network and connect it to your router
+# Step 4 - Create a private network, a subnet and connect it to your router
 
+Similar to how we created the router and gateway, let's now create a private network and attach it to the router
+
+Add something similar to this to your variables.tf file
+
+```sh
+# Network
+variable "PRIVATE_NETWORK_NAME" { default = "team0-network1" }
+variable "PRIVATE_SUBNET_NAME" { default = "team0-subnet1" }
+variable "PRIVATE_NETWORK_CIDR" { default = "10.0.0.0/24" }
+```
+
+_Note, due to neutron name spaces you can have duplicate private ip ranges, however, to avoid confusion you may want to pick something random or that won't overlap, e.g. for team1 use 10.1.1.0/24, for team2 10.2.2.0/24 and so on_
+
+Add something similar to this to your main.tf file
+
+```sh
+# Create private network
+resource "openstack_networking_network_v2" "private_network" {
+  name = "${var.PRIVATE_NETWORK_NAME}"
+  admin_state_up = "true"
+}
+
+# Create private subnet
+resource "openstack_networking_subnet_v2" "private_subnet" {
+  name = "${var.PRIVATE_SUBNET_NAME}"
+  network_id = "${openstack_networking_network_v2.private_network.id}"
+  cidr = "${var.PRIVATE_NETWORK_CIDR}"
+  ip_version = "4"
+  enable_dhcp = "true"
+}
+
+# Attach public router to private subnet
+resource "openstack_networking_router_interface_v2" "private_router_interface" {
+  router_id = "${openstack_networking_router_v2.public_router.id}"
+  subnet_id = "${openstack_networking_subnet_v2.private_subnet.id}"
+}
+```
+
+Once complete apply the new configuration
+
+```sh
+$ terraform plan
+$ terraform apply
+```
+
+If everything worked the output should look similar to this
+
+```sh
+openstack_networking_router_v2.public_router: Creation complete
+openstack_networking_subnet_v2.private_subnet: Creation complete
+openstack_networking_router_interface_v2.private_router_interface: Creating...
+  router_id: "" => "1b55b156-d4a2-443f-8314-f892bd045d34"
+  subnet_id: "" => "8ceb0647-37f2-43f5-92e1-eebe4c4428e3"
+openstack_networking_router_interface_v2.private_router_interface: Creation complete
+
+Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
+
+The state of your infrastructure has been saved to the path
+below. This state is required to modify and destroy your
+infrastructure, so keep it safe. To inspect the complete state
+use the `terraform show` command.
+
+State path: terraform.tfstate
+```
+
+Once again run terraform destroy to start fresh on the next step
+
+```sh
+$ terraform destroy
+```
+
+# Step 5 - Boot a VM on the new network
