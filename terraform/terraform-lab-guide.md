@@ -234,23 +234,17 @@ Append variables.tf with the following information
 ```sh
 # Instance Variables
 variable "KEY_NAME" { default = "cloudvt-terraform" }
-
 variable "LINUX_INSTANCE_NAME" { default = "team0-instance1" }
 variable "LINUX_IMAGE_NAME" { default = "ubuntu-1404-x86-64" }
 variable "LINUX_IMAGE_ID" { default = "b2abd035-ebf1-421f-84b1-c95471758363" }
 variable "LINUX_FLAVOR_NAME" { default = "m1.medium" }
 variable "LINUX_FLAVOR_ID" { default = "2c8f5c26-9ecb-4351-b11e-8a3008e7a53e" }
-
-variable "LB_SERVER_NAME" { default = "lb-server" }
-variable "WEB_SERVER1_NAME" { default = "web-server1" }
-variable "WEB_SERVER2_NAME" { default = "web-server2" }
-variable "SQL_SERVER_NAME" { default = "sql-server" }
 ```
 
 Append main.tf with the following information
 
 ```sh
-resource "openstack_compute_instance_v2" "test-server" {
+resource "openstack_compute_instance_v2" "instance1" {
   name = "${var.LINUX_INSTANCE_NAME}"
   image_name = "${var.LINUX_IMAGE_NAME}"
   image_id = "${var.LINUX_IMAGE_ID}"
