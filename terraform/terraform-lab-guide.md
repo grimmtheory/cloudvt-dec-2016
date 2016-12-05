@@ -235,7 +235,7 @@ Append variables.tf with the following information
 # Instance Variables
 variable "KEY_NAME" { default = "cloudvt-terraform" }
 
-variable "LINUX_INSTANCE_NAME" { default = "team#-instance1" }
+variable "LINUX_INSTANCE_NAME" { default = "team0-instance1" }
 variable "LINUX_IMAGE_NAME" { default = "ubuntu-1404-x86-64" }
 variable "LINUX_IMAGE_ID" { default = "b2abd035-ebf1-421f-84b1-c95471758363" }
 variable "LINUX_FLAVOR_NAME" { default = "m1.medium" }
@@ -258,7 +258,7 @@ resource "openstack_compute_instance_v2" "test-server" {
   security_groups = ["default"]
 
   network {
-    name = "${PRIVATE_NETWORK_NAME}"
+    name = "${var.PRIVATE_NETWORK_NAME}"
   }
 }
 ```
