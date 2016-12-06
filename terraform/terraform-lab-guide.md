@@ -358,15 +358,23 @@ $ terraform destroy
 Here we're going to inject some post installation tasks into our new instance.  To do this create a new file, for example 'web.sh' and add the following commands, or someting similar, to the file
 
 ```sh
+$ vi web.sh
+#!/bin/bash
 apt-get -y update
 apt-get -y install apache2
-echo "<html><body><h1> It works! </h1>" > /var/www/html/index.html
+cat <<EOF > /var/www/html/index.html
+<html>
+<body>
+<p>TEAM 0 USER_DATA WORKS - hostname is: $(hostname)</p>
+</body>
+</html>
+EOF
 ```
 
 Next, let's modify the instance information in main.tf to use our new user data
 
 ```sh
-user_data = "./web.sh"
+user_data = "${file("web.sh")}"
 ```
 
 Once again run plan and apply and verify your results.  If everything looks good then do another terraform destroy to start with a clean slate on the next step, or, alternately, if you're confident that you've got the process down then leave the infrastructure up and experiment with incremental "applys" going forward.
