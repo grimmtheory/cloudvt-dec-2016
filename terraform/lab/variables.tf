@@ -1,7 +1,7 @@
 # Tenant Variables
 variable "TENANT_NAME" { default = "cloudvt-terraform-lab" }
-variable "TENANT_USER_NAME" { default = "cloudvt" }
-variable "TENANT_USER_PASSWORD" { default = "cloudvt" }
+variable "TENANT_USER_NAME" { default = "********" }
+variable "TENANT_USER_PASSWORD" { default = "********" }
 variable "TENANT_AUTH_URL" { default = "https://api-cusps1.client.metacloud.net:5000/v2.0" }
 
 # Router
