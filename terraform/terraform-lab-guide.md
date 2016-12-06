@@ -46,10 +46,10 @@ The variables.tf at this point should look similar to this:
 
 ```sh
 # Tenant Variables
-variable "TENANT_NAME" { default = "********" }
-variable "TENANT_USER_NAME" { default = "********" }
-variable "TENANT_USER_PASSWORD" { default = "********" }
-variable "TENANT_AUTH_URL" { default = "https://********.metacloud.net:5000/v2.0" }
+variable "TENANT_NAME" { default = "cloudvt-terraform-lab" }
+variable "TENANT_USER_NAME" { default = "cloudvt" }
+variable "TENANT_USER_PASSWORD" { default = "cloudvt" }
+variable "TENANT_AUTH_URL" { default = "https://api-cusps1.client.metacloud.net:5000/v2.0" }
 ```
 
 And your main.tf should look similar to this:
